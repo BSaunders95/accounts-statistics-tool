@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/BSaunders95/accounts-statistics-tool/config"
 	"github.com/BSaunders95/accounts-statistics-tool/service"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 func main() {
@@ -16,7 +17,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	dataDescription := os.Args[1]
+
 	svc := service.NewService(cfg)
 
-	svc.GetNumberOfCICReports()
+	svc.GetNumberOfCICReports(dataDescription)
 }

@@ -1,9 +1,13 @@
 package models
 
+import (
+	"time"
+)
+
 // Transaction describes a transaction database entity
 type Transaction struct {
-	ID        string `bson:"_id"`
-	Data      TransactionData `bson:"data"`
+	ID   string          `bson:"_id"`
+	Data TransactionData `bson:"data"`
 }
 
 type TransactionData struct {
@@ -11,6 +15,7 @@ type TransactionData struct {
 	Filings     map[string]TransactionFiling `bson:"filings"`
 	Links       map[string]string            `bson:"links"`
 	Status      string                       `bson:"status"`
+	Closed_at   time.Time                    `bson:"created_at"`
 }
 
 type TransactionFiling struct {

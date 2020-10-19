@@ -15,4 +15,4 @@ WORKDIR /app
 COPY . .
 RUN GO111MODULE=on go build
 
-CMD ["/app/accounts-statistics-tool"]
+ENTRYPOINT ["/app/accounts-statistics-tool"]
