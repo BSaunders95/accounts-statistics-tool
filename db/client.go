@@ -3,19 +3,20 @@ package db
 import (
 	"context"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/BSaunders95/accounts-statistics-tool/config"
 	"github.com/BSaunders95/accounts-statistics-tool/models"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"os"
-	"time"
 )
 
 // TransactionClient provides an interface by which to interact with a database
 type TransactionClient interface {
-	GetAccountsTransactions() (*[]models.Transaction, error)
+	GetAccountsTransactions(dataDescription string) (*[]models.Transaction, error)
 	Shutdown()
 }
 
@@ -72,12 +73,16 @@ type MongoDatabaseInterface interface {
 	Collection(name string, opts ...*options.CollectionOptions) *mongo.Collection
 }
 
-func (c *TransactionDatabaseClient) GetAccountsTransactions() (*[]models.Transaction, error) {
+func (c *TransactionDatabaseClient) GetAccountsTransactions(dataDescription string) (*[]models.Transaction, error) {
 
 	entities := make([]models.Transaction, 0)
 
+	//last12Months := time.Now().AddDate(-1, 0, 0)
+
 	collection := c.db.Collection("transactions")
-	cur, err := collection.Find(context.Background(), bson.M{"data.status": "closed", "data.description": "CIC report and full accounts"})
+	cur, err := collection.Find(context.Background(), bson.M{"data.status": "closed", "data.description": dataDescription})
+	// ,
+	// 	"data.closed_at": bson.M{"$gte": last12Months}})
 
 	if err != nil {
 		return nil, err
@@ -110,4 +115,3 @@ func (c *TransactionDatabaseClient) Shutdown() {
 		log.Info("disconnected from mongodb successfully")
 	}
 }
-
