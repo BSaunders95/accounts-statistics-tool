@@ -17,7 +17,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	dataDescription := os.Args[1]
+	dataDescription := "CIC report and full accounts"
+	if len(os.Args) > 1 {
+		dataDescription = os.Args[1]
+	}
 
 	svc := service.NewService(cfg)
 

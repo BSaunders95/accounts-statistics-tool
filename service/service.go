@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/BSaunders95/accounts-statistics-tool/models"
 	"os"
 	"time"
 
@@ -9,9 +10,26 @@ import (
 	"github.com/BSaunders95/accounts-statistics-tool/db"
 	log "github.com/sirupsen/logrus"
 )
+
 const (
     layoutGB  = "2 January 2006"
 )
+
+const (
+	january = iota
+	february
+	march
+	april
+	may
+	june
+	july
+	august
+	september
+	october
+	november
+	december
+)
+
 type Service interface {
 	GetNumberOfCICReports(dataDescription string)
 }
@@ -29,89 +47,93 @@ func NewService(cfg *config.Config) Service {
 
 func (s *Impl) GetNumberOfCICReports(dataDescription string) {
 
+	// Retrieve all transactions which are closed and match our dataDescription string.
 	transactions, err := s.transactionClient.GetAccountsTransactions(dataDescription)
 	if err != nil {
-		log.Error(fmt.Sprintf("Something went horribly wrong, oh no! %s", err))
+		log.Error(fmt.Sprintf("Error when retrieving transactions: %s", err))
 		os.Exit(1)
 	}
 
-	closedTransactions := len(*transactions)
-	acceptedTransactions := 0
-	rejectedTransactions := 0
-	januaryTransactions := 0
-	februaryTransactions := 0
-	marchTransactions := 0
-	aprilTransactions := 0
-	mayTransactions := 0
-	juneTransactions := 0
-	julyTransactions := 0
-	augustTransactions := 0
-	septemberTransactions := 0
-	octoberTransactions := 0
-	novemberTransactions := 0
-	decemberTransactions := 0
-	withinYearTransactions := 0
+	// Grab our stats inside a StatisticsReport struct.
+	sr := sortTransactionsPerMonth(transactions)
 
-	yearAgo := time.Now().AddDate(-1, 0, 0)
 
-	//time.local := time.utc
+	// Print the struct cleanly for the user to view.
+	// (in future I suggest we look to output to CSV or some sort of document store).
+	printStatisticsReport(sr)
+}
 
-	for _, transaction := range *transactions {
+/*
+	This function will take a slice of transactions and sort them:
+		-Firstly they will be grouped by a status of "accepted" or "rejected"
+		-Secondly they will be grouped by year of filing
+		-Finally they will be grouped by month of filing
+ */
+func sortTransactionsPerMonth(transactions *[]models.Transaction) *models.StatisticsReport {
 
-		if transaction.Data.Filings != nil {
-			filing := transaction.Data.Filings[transaction.ID+"-1"]
-			if filing.Status == "accepted" {
-				if transaction.Data.Closed_at.After(yearAgo) {
-					withinYearTransactions++
-				}
-				switch transaction.Data.Closed_at.Month() {
-				case 1:
-					januaryTransactions++
-				case 2:
-					februaryTransactions++
-				case 3:
-					marchTransactions++
-				case 4:
-					aprilTransactions++
-				case 5:
-					mayTransactions++
-				case 6:
-					juneTransactions++
-				case 7:
-					julyTransactions++
-				case 8:
-					augustTransactions++
-				case 9:
-					septemberTransactions++
-				case 10:
-					octoberTransactions++
-				case 11:
-					novemberTransactions++
-				case 12:
-					decemberTransactions++
-				}
-				acceptedTransactions++
-			} else if filing.Status == "rejected" {
-				rejectedTransactions++
+	// Initialise our statisticsReport, this will be used to hold all stats needed.
+	sr := models.NewStatisticsReport()
+
+	// Instantly set our ClosedTransactions counter to the length of the slice passed in.
+	sr.ClosedTransactions = len(*transactions)
+
+	// Define a time of 1 year ago using today's date.
+	oneYearAgo := time.Now().AddDate(-1, 0, 0)
+
+	// Loop over the found transactions and sort them per year and month.
+	for _, t := range *transactions {
+
+		// Retrieve the status of the transactions filing from each transaction.
+		accepted := t.Data.Filings[t.ID + "-1"].Status == "accepted"
+		rejected := t.Data.Filings[t.ID + "-1"].Status == "rejected"
+
+		// If our status was accepted then we are interested in logging which year/month it happened.
+		if accepted {
+
+			// If our transaction was closed within a year from today, then its added to our FirstYearFilings map.
+			if t.Data.ClosedAt.After(oneYearAgo) {
+				sr.FirstYearAcceptedMonthlyFilings[int(t.Data.ClosedAt.Month())]++
 			}
+
+			// Increase our accepted transactions by 1 each loop if we reach this point.
+			sr.AcceptedTransactions++
+
+		} else if rejected {
+			//Alternatively if the filing we rejected then we increase our rejected filings by 1.
+			sr.RejectedTransactions++
 		}
 	}
 
-	log.Info(fmt.Sprintf("Number of closed transactions: %d", closedTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions: %d", acceptedTransactions))
-	log.Info(fmt.Sprintf("Number of rejected transactions: %d", rejectedTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in January  : %d", januaryTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in February : %d", februaryTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in March    : %d", marchTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in April    : %d", aprilTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in May      : %d", mayTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in June     : %d", juneTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in July     : %d", julyTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in August   : %d", augustTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in September: %d", septemberTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in October  : %d", octoberTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in November : %d", novemberTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions in December : %d", decemberTransactions))
-	log.Info(fmt.Sprintf("Number of accepted transactions from %s: %d", yearAgo.Format(layoutGB), withinYearTransactions))
-	fmt.Sprintf("Number of accepted transactions from %s: %d", yearAgo.Format(layoutGB), withinYearTransactions)
+	// Return our fully populated statistics report.
+	return sr
+}
+
+func printStatisticsReport(sr *models.StatisticsReport) {
+
+	// Filings for the first year, printed per month.
+	log.Info(fmt.Sprintf("--- Statistics Report Tool ---"))
+	log.Info(fmt.Sprintf("--- Within 12 months Filings (Per Month) ---"))
+	log.Info(fmt.Sprintf("January Filings: %d",sr.FirstYearAcceptedMonthlyFilings[january]))
+	log.Info(fmt.Sprintf("February Filings: %d",sr.FirstYearAcceptedMonthlyFilings[february]))
+	log.Info(fmt.Sprintf("March Filings: %d",sr.FirstYearAcceptedMonthlyFilings[march]))
+	log.Info(fmt.Sprintf("April Filings: %d",sr.FirstYearAcceptedMonthlyFilings[april]))
+	log.Info(fmt.Sprintf("May Filings: %d",sr.FirstYearAcceptedMonthlyFilings[may]))
+	log.Info(fmt.Sprintf("June Filings: %d",sr.FirstYearAcceptedMonthlyFilings[june]))
+	log.Info(fmt.Sprintf("July Filings: %d",sr.FirstYearAcceptedMonthlyFilings[july]))
+	log.Info(fmt.Sprintf("August Filings: %d",sr.FirstYearAcceptedMonthlyFilings[august]))
+	log.Info(fmt.Sprintf("September Filings: %d",sr.FirstYearAcceptedMonthlyFilings[september]))
+	log.Info(fmt.Sprintf("October Filings: %d",sr.FirstYearAcceptedMonthlyFilings[october]))
+	log.Info(fmt.Sprintf("November Filings: %d",sr.FirstYearAcceptedMonthlyFilings[november]))
+	log.Info(fmt.Sprintf("December Filings: %d",sr.FirstYearAcceptedMonthlyFilings[december]))
+	log.Info(fmt.Sprintf("--- Total: %d ---", sr.ClosedTransactions))
+	log.Info(fmt.Sprintf("-------------------"))
+
+
+	// Total filings printed per status.
+	log.Info(fmt.Sprintf("--- Filings grouped by status ---"))
+	log.Info(fmt.Sprintf("Closed transactions: %d", sr.ClosedTransactions))
+	log.Info(fmt.Sprintf("Accepted transactions: %d", sr.AcceptedTransactions))
+	log.Info(fmt.Sprintf("Rejected transactions: %d", sr.RejectedTransactions))
+	log.Info(fmt.Sprintf("-------------------"))
+
 }

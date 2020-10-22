@@ -15,7 +15,7 @@ type TransactionData struct {
 	Filings     map[string]TransactionFiling `bson:"filings"`
 	Links       map[string]string            `bson:"links"`
 	Status      string                       `bson:"status"`
-	Closed_at   time.Time                    `bson:"created_at"`
+	ClosedAt    time.Time                    `bson:"created_at"`
 }
 
 type TransactionFiling struct {
