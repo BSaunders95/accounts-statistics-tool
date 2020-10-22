@@ -11,25 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-    layoutGB  = "2 January 2006"
-)
-
-const (
-	january = iota+1
-	february
-	march
-	april
-	may
-	june
-	july
-	august
-	september
-	october
-	november
-	december
-)
-
 type Service interface {
 	GetNumberOfCICReports(dataDescription string)
 }
