@@ -16,7 +16,7 @@ const (
 )
 
 const (
-	january = iota
+	january = iota+1
 	february
 	march
 	april
@@ -56,7 +56,6 @@ func (s *Impl) GetNumberOfCICReports(dataDescription string) {
 
 	// Grab our stats inside a StatisticsReport struct.
 	sr := sortTransactionsPerMonth(transactions)
-
 
 	// Print the struct cleanly for the user to view.
 	// (in future I suggest we look to output to CSV or some sort of document store).
