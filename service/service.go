@@ -109,21 +109,16 @@ func sortTransactionsPerMonth(transactions *[]models.Transaction) *models.Statis
 
 func printStatisticsReport(sr *models.StatisticsReport) {
 
+
+
 	// Filings for the first year, printed per month.
 	log.Info(fmt.Sprintf("--- Statistics Report Tool ---"))
 	log.Info(fmt.Sprintf("--- Within 12 months Filings (Per Month) ---"))
-	log.Info(fmt.Sprintf("January Filings: %d",sr.FirstYearAcceptedMonthlyFilings[january]))
-	log.Info(fmt.Sprintf("February Filings: %d",sr.FirstYearAcceptedMonthlyFilings[february]))
-	log.Info(fmt.Sprintf("March Filings: %d",sr.FirstYearAcceptedMonthlyFilings[march]))
-	log.Info(fmt.Sprintf("April Filings: %d",sr.FirstYearAcceptedMonthlyFilings[april]))
-	log.Info(fmt.Sprintf("May Filings: %d",sr.FirstYearAcceptedMonthlyFilings[may]))
-	log.Info(fmt.Sprintf("June Filings: %d",sr.FirstYearAcceptedMonthlyFilings[june]))
-	log.Info(fmt.Sprintf("July Filings: %d",sr.FirstYearAcceptedMonthlyFilings[july]))
-	log.Info(fmt.Sprintf("August Filings: %d",sr.FirstYearAcceptedMonthlyFilings[august]))
-	log.Info(fmt.Sprintf("September Filings: %d",sr.FirstYearAcceptedMonthlyFilings[september]))
-	log.Info(fmt.Sprintf("October Filings: %d",sr.FirstYearAcceptedMonthlyFilings[october]))
-	log.Info(fmt.Sprintf("November Filings: %d",sr.FirstYearAcceptedMonthlyFilings[november]))
-	log.Info(fmt.Sprintf("December Filings: %d",sr.FirstYearAcceptedMonthlyFilings[december]))
+
+	for i, f := range sr.FirstYearAcceptedMonthlyFilings {
+		log.Info(fmt.Sprintf("%v Filings: %d", time.Month(i).String(), f))
+	}
+
 	log.Info(fmt.Sprintf("--- Total: %d ---", sr.ClosedTransactions))
 	log.Info(fmt.Sprintf("-------------------"))
 
